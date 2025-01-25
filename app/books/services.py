@@ -97,3 +97,35 @@ GROUP BY
 
 """
     return await db.fetch_all(query)
+
+
+async def get_book_by_id(book_id: int):
+    query = """
+       SELECT 
+    b.id AS book_id,
+    b.title,
+    b.description,
+    b.publication_year,
+    -- Concatenate authors' full names
+    STRING_AGG(DISTINCT a.first_name || ' ' || a.surname, ', ') AS author,
+    -- Concatenate genres into a single string
+    STRING_AGG(DISTINCT g.name, ', ') AS genre
+FROM 
+    books b
+-- Join with authors
+JOIN 
+    book_authors ba ON b.id = ba.book_id
+JOIN 
+    authors a ON ba.author_id = a.id
+-- Join with genres
+JOIN 
+    book_genres bg ON b.id = bg.book_id
+JOIN 
+    genres g ON bg.genre_id = g.id
+-- Filter by book_id
+WHERE 
+    b.id = $1
+GROUP BY 
+    b.id, b.title, b.description, b.publication_year;
+"""
+    return await db.fetch_one(query, book_id)
