@@ -1,9 +1,10 @@
 import uvicorn
 from fastapi import FastAPI
 
-from app.common.database import lifespan
+from app.common import lifespan
 
 app = FastAPI(lifespan=lifespan)
+
 
 from auth.router import router
 app.include_router(router)
