@@ -1,16 +1,21 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, computed_field
+
+from app.books.utils import parse_genres
+from app.constants import GENRES
 
 
-class Book(BaseModel):
+class BookResponse(BaseModel):
     title: str
     description: Optional[str] = None
     publication_year: int
     author: str
     genre: str
 
+
+class Book(BookResponse):
     @field_validator('publication_year')
     @classmethod
     def validate_year(cls, value: int):
@@ -18,15 +23,6 @@ class Book(BaseModel):
             raise ValueError('publication_year must be between 1800 and current')
         return value
 
-
-class AuthorRelatedBook(Book):
-    author: int
-
-
-class Author(BaseModel):
-    first_name: str
-    surname: str
-    last_name: Optional[str] = None
-    biography: Optional[str] = None
-    birth_year: Optional[int] = None
-    death_year: Optional[int] = None
+    @computed_field
+    def genre_list(self) -> list[str]:
+        return [genre for genre in parse_genres(self.genre) if genre in GENRES]

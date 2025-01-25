@@ -1,6 +1,6 @@
 import re
 
-from app.books.schemas import Author
+from app.books.schemas.author import Author
 
 
 def parse_authors(authors_string: str) -> list[Author]:
@@ -16,3 +16,9 @@ def parse_authors(authors_string: str) -> list[Author]:
             parsed_authors.append(Author(first_name=first_name, last_name=last_name, surname=surname))
 
     return parsed_authors
+
+
+def parse_genres(genres_string: str) -> list[str]:
+    genres = re.split(r'\s*,\s*|\s+and\s+', genres_string.strip())
+
+    return [genre.strip() for genre in genres if genre.strip()]

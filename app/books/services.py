@@ -1,5 +1,8 @@
+import asyncio
+
 from app.auth.schemas import User
-from app.books.schemas import Author, Book
+from app.books.schemas.author import Author
+from app.books.schemas.book import Book
 from app.common import db
 
 
@@ -18,7 +21,7 @@ async def get_author_by_name(author: Author):
     return await db.fetch_one(query, author.first_name, author.surname, author.last_name)
 
 
-async def add_book(book: Book, user: User):
+async def add_book_record(book: Book, user: User):
     query = """INSERT INTO books (
     title, 
     description, 
@@ -31,5 +34,36 @@ async def add_book(book: Book, user: User):
     $3,     -- publication_year
     $4,     -- created_by
     $5      -- updated_by
-);"""
-    return await db.fetch_one(query, book.title, book.description, book.publication_year, user)
+)
+RETURNING *;
+"""
+    return await db.fetch_one(query, book.title, book.description, book.publication_year, user.id, user.id)
+
+
+async def add_book_authors(book_id: int, authors: list[int]):
+    query = "INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2);"
+
+    tasks = [db.execute(query, book_id, author_id) for author_id in authors]
+    await asyncio.gather(*tasks)
+
+
+async def add_book_genres(book_id: int, genres: list[str]):
+    query = """
+        WITH selected_genres AS (
+            SELECT id, name
+            FROM genres
+            WHERE name = ANY($1)
+        ),
+        inserted_relationships AS (
+            INSERT INTO book_genres (book_id, genre_id)
+            SELECT $2, id
+            FROM selected_genres
+            ON CONFLICT DO NOTHING
+            RETURNING book_id, genre_id
+        )
+        SELECT ir.book_id, ir.genre_id, sg.name
+        FROM inserted_relationships ir
+        JOIN selected_genres sg ON ir.genre_id = sg.id;
+    """
+    result = await db.fetch_all(query, genres, book_id)
+    return result
