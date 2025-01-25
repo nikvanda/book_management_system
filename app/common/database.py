@@ -17,6 +17,14 @@ class Database:
     async def disconnect(self):
         self.pool.close()
 
+    async def execute(self, query: str, *args):
+        async with self.pool.acquire() as connection:
+            await connection.execute(query, *args)
+
+    async def fetch_one(self, query: str, *args):
+        async with self.pool.acquire() as connection:
+            return await connection.fetchrow(query, *args)
+
 
 db = Database(DATABASE_URL)
 
