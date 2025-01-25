@@ -62,8 +62,8 @@ def upgrade():
     CREATE TABLE authors (
         id SERIAL PRIMARY KEY,
         first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        surname VARCHAR(100),
+        surname VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100),
         biography TEXT,
         birth_year INTEGER,
         death_year INTEGER,
