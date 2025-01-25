@@ -1,5 +1,5 @@
 .idea
 test.py
 models.py
-.env
+app/.env
 *__pycache__*
