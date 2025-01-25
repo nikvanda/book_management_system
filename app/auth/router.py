@@ -12,13 +12,14 @@ async def register(user: UserRegister):
     await register_user(user)
 
 
-@router.post('/login')
+@router.post('/login', response_model=UserAuthorize)
 async def login(user: UserIn):
     authenticated_user = await authenticate_user(user)
     if authenticated_user:
-        data = UserAuthorize(**await authorize_user(authenticated_user))
+        data = await authorize_user(authenticated_user)
         return data
     #todo: raise an error
+#todo: add logout
 
 
 @router.get('/me', response_model=User)
