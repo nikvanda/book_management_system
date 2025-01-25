@@ -3,11 +3,12 @@ from typing import Optional
 
 from pydantic import BaseModel, field_validator, computed_field
 
+from app.books.schemas.genre import Genre
 from app.books.utils import parse_genres
-from app.constants import GENRES
 
 
 class BookResponse(BaseModel):
+    book_id: int = None
     title: str
     description: Optional[str] = None
     publication_year: int
@@ -24,5 +25,5 @@ class Book(BookResponse):
         return value
 
     @computed_field
-    def genre_list(self) -> list[str]:
-        return [genre for genre in parse_genres(self.genre) if genre in GENRES]
+    def genre_list(self) -> list[Genre]:
+        return [Genre(name=genre) for genre in parse_genres(self.genre)]

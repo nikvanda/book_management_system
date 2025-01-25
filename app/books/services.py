@@ -10,7 +10,7 @@ async def add_author(author: Author, user: User):
     query = """
     INSERT INTO authors (first_name, surname, last_name, biography, birth_year, death_year, created_by, updated_by)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id;
+    RETURNING *;
 """
     return await db.fetch_one(query, author.first_name, author.surname, author.last_name,
                               author.biography, author.birth_year, author.death_year, user.id, user.id)
@@ -67,3 +67,33 @@ async def add_book_genres(book_id: int, genres: list[str]):
     """
     result = await db.fetch_all(query, genres, book_id)
     return result
+
+
+async def get_all_books_records():
+    query = """
+       SELECT 
+    b.id AS book_id,
+    b.title,
+    b.description,
+    b.publication_year,
+    -- Concatenate authors' full names into a single string
+    STRING_AGG(DISTINCT a.first_name || ' ' || a.surname, ', ') AS author,
+    -- Concatenate genres into a single string
+    STRING_AGG(DISTINCT g.name, ', ') AS genre
+FROM 
+    books b
+-- Join with authors
+JOIN 
+    book_authors ba ON b.id = ba.book_id
+JOIN 
+    authors a ON ba.author_id = a.id
+-- Join with genres
+JOIN 
+    book_genres bg ON b.id = bg.book_id
+JOIN 
+    genres g ON bg.genre_id = g.id
+GROUP BY 
+    b.id, b.title, b.description, b.publication_year;
+
+"""
+    return await db.fetch_all(query)
