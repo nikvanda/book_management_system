@@ -2,24 +2,18 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from .schemas import Book, Author
+from .schemas import Book
 from .services import add_author, get_author_by_name
 from app.auth.schemas import User
 from app.auth.services import get_current_active_user
+from .utils import parse_authors
 
 router = APIRouter(prefix='/books')
 
 
 @router.post('/', response_model=Book)
 async def add_book(book: Book, current_user: Annotated[User, Depends(get_current_active_user)]):
-    author_data = book.author.strip().split(' ')
+    authors = parse_authors(book.author)
+    author_records = [await get_author_by_name(author) or await add_author(author, current_user) for author in authors]
 
-    first_name, surname = author_data[:2]
-    try:
-        last_name = author_data[2]
-    except IndexError:
-        last_name = None
-
-    author = Author(first_name=first_name, last_name=last_name, surname=surname)
-    author_record = await get_author_by_name(author) or await add_author(author, current_user)
-    print(author_record)
+    print(author_records)

@@ -1,5 +1,5 @@
 from app.auth.schemas import User
-from app.books.schemas import Author
+from app.books.schemas import Author, Book
 from app.common import db
 
 
@@ -17,4 +17,19 @@ async def get_author_by_name(author: Author):
     query = "SELECT * FROM authors WHERE first_name = $1 AND surname = $2 AND (last_name = $3 OR (last_name IS NULL AND $3 IS NULL));"
     return await db.fetch_one(query, author.first_name, author.surname, author.last_name)
 
-# async def add_book(book, )
+
+async def add_book(book: Book, user: User):
+    query = """INSERT INTO books (
+    title, 
+    description, 
+    publication_year, 
+    created_by, 
+    updated_by
+) VALUES (
+    $1,     -- title
+    $2,     -- description
+    $3,     -- publication_year
+    $4,     -- created_by
+    $5      -- updated_by
+);"""
+    return await db.fetch_one(query, book.title, book.description, book.publication_year, user)

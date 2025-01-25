@@ -29,8 +29,23 @@ class Database:
 db = Database(DATABASE_URL)
 
 
+async def seed_genres():
+    genres = [
+        "Fiction", "Non-Fiction", "Science Fiction",
+        "Fantasy", "Mystery", "Thriller",
+        "Romance", "Historical Fiction", "Biography",
+        "Self-Help", "Science", "Poetry"
+    ]
+
+    for genre in genres:
+        await db.execute(
+            "INSERT INTO genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING",
+            genre)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.connect()
+    await seed_genres()
     yield
     await db.disconnect()
