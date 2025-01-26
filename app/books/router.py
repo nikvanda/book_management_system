@@ -5,7 +5,7 @@ from starlette.responses import JSONResponse
 
 from .schemas.book import Book, BookResponse
 from .services import add_author, get_author_by_name, add_book_record, add_book_authors, add_book_genres, \
-    get_all_books_records, get_book_by_id
+    get_all_books_records, get_book_by_id, delete_book_by_id
 from app.auth.schemas import User
 from app.auth.services import get_current_active_user
 from .utils import parse_authors
@@ -36,7 +36,7 @@ async def add_book(book: Book, current_user: Annotated[User, Depends(get_current
 
 
 @router.get('/', response_model=list[BookResponse])
-async def get_all_books():  # todo: does not return book if author is empty. need to check the same for genre
+async def get_all_books():
     return [dict(book) for book in await get_all_books_records()]
 
 
@@ -48,3 +48,12 @@ async def get_book(book_id: int):
     return JSONResponse(
         status_code=404,
         content={"detail": "Book not found", "book_id": book_id})
+
+
+@router.delete('/{book_id}')
+async def delete_book(book_id: int, current_user: Annotated[User, Depends(get_current_active_user)]):
+    response = await delete_book_by_id(book_id)
+    if response:
+        return JSONResponse(status_code=204, content=f'Book {response["id"]} was deleted.')
+    else:
+        return JSONResponse(status_code=404, content=f'No book by {book_id}.')

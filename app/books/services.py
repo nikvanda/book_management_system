@@ -128,3 +128,8 @@ GROUP BY
     b.id, b.title, b.description, b.publication_year;
 """
     return await db.fetch_one(query, book_id)
+
+
+async def delete_book_by_id(book_id: int):
+    query = """DELETE FROM books WHERE id = $1 RETURNING id;"""
+    return await db.fetch_one(query, book_id)
