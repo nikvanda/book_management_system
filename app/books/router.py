@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from starlette.responses import JSONResponse
 
 from .schemas.book import Book, BookResponse
 from .services import add_author, get_author_by_name, add_book_record, add_book_authors, add_book_genres, \
@@ -40,7 +41,12 @@ async def get_all_books(): # todo: does not return book if author is empty. need
     return [dict(book) for book in await get_all_books_records()]
 
 
-@router.get('/{book_id}', response_model=BookResponse) #todo: add detail response
+@router.get('/{book_id}', response_model=BookResponse)
 async def get_book(book_id: int):
     book = await get_book_by_id(book_id)
-    return dict(book)
+    if book:
+        return dict(book)
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "Book not found", "book_id": book_id},
+    )
