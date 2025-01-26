@@ -1,135 +1,45 @@
-import asyncio
-
-from app.auth.schemas import User
-from app.books.schemas.author import Author
+from app.books.repository import update_book_by_id, get_author_by_name, add_author, add_book_authors, add_book_genres, \
+    clear_book_authors, clear_book_genres, add_book_record
 from app.books.schemas.book import Book
-from app.common import db
+from app.books.schemas.genre import Genre
+from app.books.utils import parse_authors
 
 
-async def add_author(author: Author, user: User):
-    query = """
-    INSERT INTO authors (first_name, surname, last_name, biography, birth_year, death_year, created_by, updated_by)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING *;
-"""
-    return await db.fetch_one(query, author.first_name, author.surname, author.last_name,
-                              author.biography, author.birth_year, author.death_year, user.id, user.id)
+async def set_book_authors(author: str, book_id: int, user_id: int):
+    authors = parse_authors(author)
+    author_records = [await get_author_by_name(author) or await add_author(author, user_id)
+                      for author in authors]
+    await add_book_authors(book_id, [author['id'] for author in author_records])
+    return ','.join([' '.join([author['first_name'], author['surname']]) for author in author_records])
 
 
-async def get_author_by_name(author: Author):
-    query = "SELECT * FROM authors WHERE first_name = $1 AND surname = $2 AND (last_name = $3 OR (last_name IS NULL AND $3 IS NULL));"
-    return await db.fetch_one(query, author.first_name, author.surname, author.last_name)
+async def set_book_genres(genre_list: list[Genre], book_id: int):
+    return ','.join([genre['name'] for genre in await add_book_genres(book_id, [genre.name for genre in genre_list])])
 
 
-async def add_book_record(book: Book, user: User):
-    query = """INSERT INTO books (
-    title, 
-    description, 
-    publication_year, 
-    created_by, 
-    updated_by
-) VALUES (
-    $1,     -- title
-    $2,     -- description
-    $3,     -- publication_year
-    $4,     -- created_by
-    $5      -- updated_by
-)
-RETURNING *;
-"""
-    return await db.fetch_one(query, book.title, book.description, book.publication_year, user.id, user.id)
+async def update_book_instance(book_id: int, book_data: Book, user_id: int):
+    book_record = await update_book_by_id(book_id, book_data, user_id)
+    response = dict(book_record)
+
+    if book_data.author:
+        await clear_book_authors(book_id)
+        response.author = await set_book_authors(book_data.author, book_record['id'], user_id)
+
+    if book_data.genre:
+        await clear_book_genres(book_id)
+        response.genre = await set_book_genres(book_data.genre_list, book_id)
+
+    return response
 
 
-async def add_book_authors(book_id: int, authors: list[int]):
-    query = "INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2);"
+async def add_book_instance(book_data: Book, user_id: int):
+    book_record = await add_book_record(book_data, user_id)
+    response = dict(book_record)
 
-    tasks = [db.execute(query, book_id, author_id) for author_id in authors]
-    await asyncio.gather(*tasks)
+    if book_data.author:
+        response.author = await set_book_authors(book_data.author, book_record['id'], user_id)
 
+    if book_data.genre:
+        response.genre = await set_book_genres(book_data.genre_list, book_record['id'])
 
-async def add_book_genres(book_id: int, genres: list[str]):
-    query = """
-        WITH selected_genres AS (
-            SELECT id, name
-            FROM genres
-            WHERE name = ANY($1)
-        ),
-        inserted_relationships AS (
-            INSERT INTO book_genres (book_id, genre_id)
-            SELECT $2, id
-            FROM selected_genres
-            ON CONFLICT DO NOTHING
-            RETURNING book_id, genre_id
-        )
-        SELECT ir.book_id, ir.genre_id, sg.name
-        FROM inserted_relationships ir
-        JOIN selected_genres sg ON ir.genre_id = sg.id;
-    """
-    result = await db.fetch_all(query, genres, book_id)
-    return result
-
-
-async def get_all_books_records():
-    query = """
-       SELECT 
-    b.id AS book_id,
-    b.title,
-    b.description,
-    b.publication_year,
-    -- Concatenate authors' full names into a single string, handle NULLs
-    COALESCE(STRING_AGG(DISTINCT a.first_name || ' ' || a.surname, ', '), 'No authors') AS author,
-    -- Concatenate genres into a single string, handle NULLs
-    COALESCE(STRING_AGG(DISTINCT g.name, ', '), 'No genres') AS genre
-FROM 
-    books b
--- Left join with authors
-LEFT JOIN 
-    book_authors ba ON b.id = ba.book_id
-LEFT JOIN 
-    authors a ON ba.author_id = a.id
--- Left join with genres
-LEFT JOIN 
-    book_genres bg ON b.id = bg.book_id
-LEFT JOIN 
-    genres g ON bg.genre_id = g.id
-GROUP BY 
-    b.id, b.title, b.description, b.publication_year;
-"""
-    return await db.fetch_all(query)
-
-
-async def get_book_by_id(book_id: int):
-    query = """
-       SELECT 
-    b.id AS book_id,
-    b.title,
-    b.description,
-    b.publication_year,
-    -- Concatenate authors' full names into a single string, handle NULLs
-    COALESCE(STRING_AGG(DISTINCT a.first_name || ' ' || a.surname, ', '), 'No authors') AS author,
-    -- Concatenate genres into a single string, handle NULLs
-    COALESCE(STRING_AGG(DISTINCT g.name, ', '), 'No genres') AS genre
-FROM 
-    books b
--- Left join with authors
-LEFT JOIN 
-    book_authors ba ON b.id = ba.book_id
-LEFT JOIN 
-    authors a ON ba.author_id = a.id
--- Left join with genres
-LEFT JOIN 
-    book_genres bg ON b.id = bg.book_id
-LEFT JOIN 
-    genres g ON bg.genre_id = g.id
--- Filter by book_id
-WHERE 
-    b.id = $1
-GROUP BY 
-    b.id, b.title, b.description, b.publication_year;
-"""
-    return await db.fetch_one(query, book_id)
-
-
-async def delete_book_by_id(book_id: int):
-    query = """DELETE FROM books WHERE id = $1 RETURNING id;"""
-    return await db.fetch_one(query, book_id)
+    return response
