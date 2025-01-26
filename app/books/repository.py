@@ -68,8 +68,8 @@ async def add_book_genres(book_id: int, genres: list[str]):
 
 
 async def get_all_books_records(title: str = None, author: str = None, genre: str = None,
-                                year_from: int = None, year_to: int = None, start_item: int = 0,
-                                page_size: int = 10, sort_by: str = 'title', sort_order: str = 'asc'):
+                                year_from: int = None, year_to: int = None, start_item: int = None,
+                                page_size: int = None, sort_by: str = 'title', sort_order: str = 'asc'):
     query = f"""
      SELECT 
     b.id AS book_id,

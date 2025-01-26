@@ -1,4 +1,6 @@
+import csv
 import json
+from io import StringIO
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query
@@ -20,7 +22,7 @@ async def add_book(book: Book, current_user: Annotated[User, Depends(get_current
     return response
 
 
-@router.get('/', response_model=list[BookResponse])  # todo: test filtering
+@router.get('/', response_model=list[BookResponse])  # todo: test filtering and add more sort vars
 async def get_all_books(title: Optional[str] = Query(None, description="Filter by title (partial match)"),
                         author: Optional[str] = Query(None, description="Filter by author (partial match)"),
                         genre: Optional[str] = Query(None, description="Filter by genre (exact match)"),
@@ -28,8 +30,8 @@ async def get_all_books(title: Optional[str] = Query(None, description="Filter b
                         year_to: Optional[int] = Query(None, description="Filter by publication year (to)"),
                         page: int = Query(1, ge=1, description="Page number (1-indexed)"),
                         page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
-                        sort_by: str = Query("title", description="Column to sort by (title, year, or author)"),
-                        sort_order: str = Query("asc", description="Sort order ('asc' or 'desc')")):  # todo: validate empty response
+                        sort_by: str = Query("title", description="Column to sort by (title or year)"),
+                        sort_order: str = Query("asc", description="Sort order ('asc' or 'desc')")):
     valid_sort_columns = {"title", "year", "author", "genre"}
     if sort_by not in valid_sort_columns:
         raise HTTPException(status_code=400, detail=f"Invalid sort_by value. Must be one of {valid_sort_columns}")
@@ -42,7 +44,9 @@ async def get_all_books(title: Optional[str] = Query(None, description="Filter b
     books = await get_all_book_instances(title=title, author=author, genre=genre,
                                          year_from=year_from, year_to=year_to, page_size=page_size,
                                          start_item=start_item, sort_by=sort_by, sort_order=sort_order)
-    return books
+    if books:
+        return books
+    return JSONResponse(status_code=404, content='No data.')
 
 
 @router.get('/{book_id}', response_model=BookResponse)
@@ -85,8 +89,25 @@ async def import_books_from_file(current_user: Annotated[User, Depends(get_curre
             books_data = json.loads(contents.decode())
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid JSON file format")
+        for book in books_data:
+            book_obj = Book(**book) #todo: test and find out how to speed up operation
+            await add_book_instance(book_obj, current_user.id)
+        return JSONResponse(status_code=200, content='Data was uploaded.')
 
-    if file.content_type != "text/csv":
-        pass
+    if file.content_type == "text/csv":
+        contents = await file.read()
+        try:
+            decoded = contents.decode()
+            csv_reader = csv.DictReader(StringIO(decoded))
+        except Exception as e: #todo: specify exception
+            raise HTTPException(status_code=400, detail="Error reading CSV file")
+
+        for row in csv_reader:
+            try:
+                book_obj = Book(**row)  # todo: test and find out how to speed up operation
+                await add_book_instance(book_obj, current_user.id)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Error processing book: {e}")
+            return JSONResponse(status_code=200, content='Data was uploaded.')
 
     raise HTTPException(status_code=400, detail="Provided file type is not supported.")
