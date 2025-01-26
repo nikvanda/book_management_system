@@ -1,5 +1,5 @@
 from app.books.repository import update_book_by_id, get_author_by_name, add_author, add_book_authors, add_book_genres, \
-    clear_book_authors, clear_book_genres, add_book_record
+    clear_book_authors, clear_book_genres, add_book_record, delete_book_by_id, get_all_books_records, get_book_by_id
 from app.books.schemas.book import Book
 from app.books.schemas.genre import Genre
 from app.books.utils import parse_authors
@@ -23,11 +23,11 @@ async def update_book_instance(book_id: int, book_data: Book, user_id: int):
 
     if book_data.author:
         await clear_book_authors(book_id)
-        response.author = await set_book_authors(book_data.author, book_record['id'], user_id)
+        response['author'] = await set_book_authors(book_data.author, book_record['id'], user_id)
 
     if book_data.genre:
         await clear_book_genres(book_id)
-        response.genre = await set_book_genres(book_data.genre_list, book_id)
+        response['genre'] = await set_book_genres(book_data.genre_list, book_id)
 
     return response
 
@@ -37,9 +37,23 @@ async def add_book_instance(book_data: Book, user_id: int):
     response = dict(book_record)
 
     if book_data.author:
-        response.author = await set_book_authors(book_data.author, book_record['id'], user_id)
+        response['author'] = await set_book_authors(book_data.author, book_record['id'], user_id)
 
     if book_data.genre:
-        response.genre = await set_book_genres(book_data.genre_list, book_record['id'])
+        response['genre'] = await set_book_genres(book_data.genre_list, book_record['id'])
 
     return response
+
+
+async def get_all_book_instances():
+    return [dict(book) for book in await get_all_books_records()]
+
+
+async def get_book_instance(book_id: int):
+    book = await get_book_by_id(book_id)
+    return dict(book)
+
+
+async def delete_book_instance(book_id: int):
+    result = await delete_book_by_id(book_id)
+    return result

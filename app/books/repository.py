@@ -136,12 +136,12 @@ async def delete_book_by_id(book_id: int):
 
 async def clear_book_authors(book_id: int):
     query = """DELETE FROM book_authors WHERE book_id = $1;"""
-    db.execute(query, book_id)
+    await db.execute(query, book_id)
 
 
 async def clear_book_genres(book_id: int):
     query = """DELETE FROM book_genres WHERE book_id = $1;"""
-    db.execute(query, book_id)
+    await db.execute(query, book_id)
 
 
 async def update_book_by_id(book_id: int, book_data: Book, user_id: int):
@@ -155,5 +155,5 @@ SET
 WHERE id = $5
 RETURNING *;
     """
-    return db.fetch_one(query, book_data.title, book_data.description,
+    return await db.fetch_one(query, book_data.title, book_data.description,
                         book_data.publication_year, user_id, book_id)
