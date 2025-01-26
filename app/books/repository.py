@@ -1,6 +1,5 @@
 import asyncio
 
-from app.auth.schemas import User
 from app.books.schemas.author import Author
 from app.books.schemas.book import Book
 from app.common import db
@@ -69,9 +68,10 @@ async def add_book_genres(book_id: int, genres: list[str]):
 
 
 async def get_all_books_records(title: str = None, author: str = None, genre: str = None,
-                                year_from: int = None, year_to: int = None):
-    query = """
-       SELECT 
+                                year_from: int = None, year_to: int = None, start_item: int = 0,
+                                page_size: int = 10, sort_by: str = 'title', sort_order: str = 'asc'):
+    query = f"""
+     SELECT 
     b.id AS book_id,
     b.title,
     b.description,
@@ -102,9 +102,19 @@ WHERE
     -- Filter by publication year range if provided
     AND (b.publication_year BETWEEN COALESCE($4, b.publication_year) AND COALESCE($5, b.publication_year))
 GROUP BY 
-    b.id, b.title, b.description, b.publication_year;
+    b.id, b.title, b.description, b.publication_year
+-- Sorting
+ORDER BY 
+    CASE 
+        WHEN $6 = 'title' THEN b.title
+        WHEN $6 = 'publication_year' THEN b.publication_year::TEXT -- Cast to TEXT
+        ELSE b.title -- Default sort by title
+    END 
+    {sort_order.upper()} -- Sort direction (ASC or DESC)
+-- Pagination
+LIMIT $7 OFFSET $8;
 """
-    return await db.fetch_all(query, title, author, genre, year_from, year_to)
+    return await db.fetch_all(query, title, author, genre, year_from, year_to, sort_by, page_size, start_item)
 
 
 async def get_book_by_id(book_id: int):

@@ -8,7 +8,7 @@ from app.books.utils import parse_genres
 
 
 class BookResponse(BaseModel):
-    book_id: int = None
+    book_id: int = None #todo: resolve name issue
     title: str
     description: Optional[str] = None
     publication_year: int

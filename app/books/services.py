@@ -20,6 +20,7 @@ async def set_book_genres(genre_list: list[Genre], book_id: int):
 async def update_book_instance(book_id: int, book_data: Book, user_id: int):
     book_record = await update_book_by_id(book_id, book_data, user_id)
     response = dict(book_record)
+    response['book_id'] = book_record['id']
 
     if book_data.author:
         await clear_book_authors(book_id)
@@ -35,6 +36,7 @@ async def update_book_instance(book_id: int, book_data: Book, user_id: int):
 async def add_book_instance(book_data: Book, user_id: int):
     book_record = await add_book_record(book_data, user_id)
     response = dict(book_record)
+    response['book_id'] = book_record['id']
 
     if book_data.author:
         response['author'] = await set_book_authors(book_data.author, book_record['id'], user_id)
@@ -46,7 +48,8 @@ async def add_book_instance(book_data: Book, user_id: int):
 
 
 async def get_all_book_instances(**kwargs):
-    return [dict(book) for book in await get_all_books_records(**kwargs)]
+    result = await get_all_books_records(**kwargs)
+    return [dict(book) for book in result]
 
 
 async def get_book_instance(book_id: int):
