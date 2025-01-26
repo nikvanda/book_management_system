@@ -19,9 +19,10 @@ async def add_book(book: Book, current_user: Annotated[User, Depends(get_current
     return response
 
 
-@router.get('/', response_model=list[BookResponse])
-async def get_all_books(): #todo: validate empty response
-    books = get_all_book_instances()
+@router.get('/', response_model=list[BookResponse]) #todo: test filtering
+async def get_all_books(title: str = None, author: str = None, genre: str = None,
+                        year_from: int = None, year_to: int = None): #todo: validate empty response
+    books = await get_all_book_instances(title=title, author=author, genre=genre, year_from=year_from, year_to=year_to)
     return books
 
 

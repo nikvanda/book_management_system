@@ -45,8 +45,8 @@ async def add_book_instance(book_data: Book, user_id: int):
     return response
 
 
-async def get_all_book_instances():
-    return [dict(book) for book in await get_all_books_records()]
+async def get_all_book_instances(**kwargs):
+    return [dict(book) for book in await get_all_books_records(**kwargs)]
 
 
 async def get_book_instance(book_id: int):

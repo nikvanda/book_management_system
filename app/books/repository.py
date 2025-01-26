@@ -68,7 +68,8 @@ async def add_book_genres(book_id: int, genres: list[str]):
     return await db.fetch_all(query, genres, book_id)
 
 
-async def get_all_books_records():
+async def get_all_books_records(title: str = None, author: str = None, genre: str = None,
+                                year_from: int = None, year_to: int = None):
     query = """
        SELECT 
     b.id AS book_id,
@@ -91,10 +92,19 @@ LEFT JOIN
     book_genres bg ON b.id = bg.book_id
 LEFT JOIN 
     genres g ON bg.genre_id = g.id
+WHERE
+    -- Filter by title if provided (use ILIKE for case-insensitive matching)
+    (b.title ILIKE COALESCE($1, b.title))
+    -- Filter by author if provided (concatenate authors' names and match)
+    AND (a.first_name || ' ' || a.surname ILIKE COALESCE($2, a.first_name || ' ' || a.surname))
+    -- Filter by genre if provided
+    AND (g.name ILIKE COALESCE($3, g.name))
+    -- Filter by publication year range if provided
+    AND (b.publication_year BETWEEN COALESCE($4, b.publication_year) AND COALESCE($5, b.publication_year))
 GROUP BY 
     b.id, b.title, b.description, b.publication_year;
 """
-    return await db.fetch_all(query)
+    return await db.fetch_all(query, title, author, genre, year_from, year_to)
 
 
 async def get_book_by_id(book_id: int):
@@ -156,4 +166,4 @@ WHERE id = $5
 RETURNING *;
     """
     return await db.fetch_one(query, book_data.title, book_data.description,
-                        book_data.publication_year, user_id, book_id)
+                              book_data.publication_year, user_id, book_id)
