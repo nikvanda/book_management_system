@@ -15,29 +15,28 @@ router = APIRouter(prefix='/books')
 
 @router.post('/', response_model=BookResponse)
 async def add_book(book: Book, current_user: Annotated[User, Depends(get_current_active_user)]):
-    authors = parse_authors(book.author)
-    author_records = [await get_author_by_name(author) or await add_author(author, current_user)
-                      for author in authors]
-
     created_book = await add_book_record(book, current_user)
-    genres = [genre['name'] for genre in await add_book_genres(created_book['id'],
-                                                               [genre.name for genre in book.genre_list])]
-
-    await add_book_authors(created_book['id'], [author['id'] for author in author_records])
-
     response = BookResponse(book_id=created_book['id'],
                             title=created_book['title'],
                             description=created_book['description'],
-                            publication_year=created_book['publication_year'],
-                            author=','.join(
-                                [' '.join([author['first_name'], author['surname']]) for author in author_records]),
-                            genre=','.join(genres)
-                            )
+                            publication_year=created_book['publication_year'])
+    if book.author:
+        authors = parse_authors(book.author)
+        author_records = [await get_author_by_name(author) or await add_author(author, current_user)
+                          for author in authors]
+        await add_book_authors(created_book['id'], [author['id'] for author in author_records])
+        response.author = ','.join([' '.join([author['first_name'], author['surname']]) for author in author_records])
+
+    if book.genre:
+        genres = [genre['name'] for genre in await add_book_genres(created_book['id'],
+                                                                   [genre.name for genre in book.genre_list])]
+        response.genre = ','.join(genres)
+
     return response
 
 
 @router.get('/', response_model=list[BookResponse])
-async def get_all_books(): # todo: does not return book if author is empty. need to check the same for genre
+async def get_all_books():  # todo: does not return book if author is empty. need to check the same for genre
     return [dict(book) for book in await get_all_books_records()]
 
 
@@ -48,5 +47,4 @@ async def get_book(book_id: int):
         return dict(book)
     return JSONResponse(
         status_code=404,
-        content={"detail": "Book not found", "book_id": book_id},
-    )
+        content={"detail": "Book not found", "book_id": book_id})

@@ -12,8 +12,8 @@ class BookResponse(BaseModel):
     title: str
     description: Optional[str] = None
     publication_year: int
-    author: str
-    genre: str
+    author: str = None
+    genre: str = None
 
 
 class Book(BookResponse):

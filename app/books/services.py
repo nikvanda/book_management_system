@@ -76,25 +76,24 @@ async def get_all_books_records():
     b.title,
     b.description,
     b.publication_year,
-    -- Concatenate authors' full names into a single string
-    STRING_AGG(DISTINCT a.first_name || ' ' || a.surname, ', ') AS author,
-    -- Concatenate genres into a single string
-    STRING_AGG(DISTINCT g.name, ', ') AS genre
+    -- Concatenate authors' full names into a single string, handle NULLs
+    COALESCE(STRING_AGG(DISTINCT a.first_name || ' ' || a.surname, ', '), 'No authors') AS author,
+    -- Concatenate genres into a single string, handle NULLs
+    COALESCE(STRING_AGG(DISTINCT g.name, ', '), 'No genres') AS genre
 FROM 
     books b
--- Join with authors
-JOIN 
+-- Left join with authors
+LEFT JOIN 
     book_authors ba ON b.id = ba.book_id
-JOIN 
+LEFT JOIN 
     authors a ON ba.author_id = a.id
--- Join with genres
-JOIN 
+-- Left join with genres
+LEFT JOIN 
     book_genres bg ON b.id = bg.book_id
-JOIN 
+LEFT JOIN 
     genres g ON bg.genre_id = g.id
 GROUP BY 
     b.id, b.title, b.description, b.publication_year;
-
 """
     return await db.fetch_all(query)
 
@@ -106,21 +105,21 @@ async def get_book_by_id(book_id: int):
     b.title,
     b.description,
     b.publication_year,
-    -- Concatenate authors' full names
-    STRING_AGG(DISTINCT a.first_name || ' ' || a.surname, ', ') AS author,
-    -- Concatenate genres into a single string
-    STRING_AGG(DISTINCT g.name, ', ') AS genre
+    -- Concatenate authors' full names into a single string, handle NULLs
+    COALESCE(STRING_AGG(DISTINCT a.first_name || ' ' || a.surname, ', '), 'No authors') AS author,
+    -- Concatenate genres into a single string, handle NULLs
+    COALESCE(STRING_AGG(DISTINCT g.name, ', '), 'No genres') AS genre
 FROM 
     books b
--- Join with authors
-JOIN 
+-- Left join with authors
+LEFT JOIN 
     book_authors ba ON b.id = ba.book_id
-JOIN 
+LEFT JOIN 
     authors a ON ba.author_id = a.id
--- Join with genres
-JOIN 
+-- Left join with genres
+LEFT JOIN 
     book_genres bg ON b.id = bg.book_id
-JOIN 
+LEFT JOIN 
     genres g ON bg.genre_id = g.id
 -- Filter by book_id
 WHERE 
