@@ -26,11 +26,11 @@ def test_verify_password():
 
 @pytest.mark.asyncio
 async def test_register_user():
-    user = UserRegister(username="test_user", password="test_password")
+    user = UserRegister(username="test_user", password="test_password", confirm_password="test_password")
     mock_db = mock.MagicMock(spec=Database)
     mock_add_user = mock.AsyncMock()
 
-    with mock.patch('your_module.add_user', mock_add_user):
+    with mock.patch('app.auth.repository.add_user', mock_add_user):
         await register_user(user, mock_db)
 
     mock_add_user.assert_awaited_once()
@@ -41,7 +41,7 @@ async def test_get_user():
     mock_db = mock.MagicMock(spec=Database)
     mock_get_user_by_username = mock.AsyncMock(return_value={'username': 'test_user'})
 
-    with mock.patch('your_module.get_user_by_username', mock_get_user_by_username):
+    with mock.patch('app.auth.repository.get_user_by_username', mock_get_user_by_username):
         user = await get_user("test_user", mock_db)
 
     mock_get_user_by_username.assert_awaited_once()
@@ -55,7 +55,7 @@ async def test_authenticate_user():
     mock_get_user = mock.AsyncMock(
         return_value={'username': 'test_user', 'password': get_password_hash("test_password")})
 
-    with mock.patch('your_module.get_user', mock_get_user):
+    with mock.patch('app.auth.services.get_user', mock_get_user):
         result = await authenticate_user(user_data, mock_db)
 
     mock_get_user.assert_awaited_once()
