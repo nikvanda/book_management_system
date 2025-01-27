@@ -2,10 +2,9 @@ import asyncio
 
 from app.books.schemas.author import Author
 from app.books.schemas.book import Book
-from app.common import db
 
 
-async def add_author(author: Author, user_id: int):
+async def add_author(author: Author, user_id: int, db):
     query = """
     INSERT INTO authors (first_name, surname, last_name, biography, birth_year, death_year, created_by, updated_by)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -15,12 +14,12 @@ async def add_author(author: Author, user_id: int):
                               author.biography, author.birth_year, author.death_year, user_id, user_id)
 
 
-async def get_author_by_name(author: Author):
+async def get_author_by_name(author: Author, db):
     query = "SELECT * FROM authors WHERE first_name = $1 AND surname = $2 AND (last_name = $3 OR (last_name IS NULL AND $3 IS NULL));"
     return await db.fetch_one(query, author.first_name, author.surname, author.last_name)
 
 
-async def add_book_record(book: Book, user_id):
+async def add_book_record(book: Book, user_id, db):
     query = """INSERT INTO books (
     title, 
     description, 
@@ -39,14 +38,14 @@ RETURNING *;
     return await db.fetch_one(query, book.title, book.description, book.publication_year, user_id, user_id)
 
 
-async def add_book_authors(book_id: int, authors: list[int]):
+async def add_book_authors(book_id: int, authors: list[int], db):
     query = "INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2);"
 
     tasks = [db.execute(query, book_id, author_id) for author_id in authors]
     await asyncio.gather(*tasks)
 
 
-async def add_book_genres(book_id: int, genres: list[str]):
+async def add_book_genres(book_id: int, genres: list[str], db):
     query = """
         WITH selected_genres AS (
             SELECT id, name
@@ -67,7 +66,7 @@ async def add_book_genres(book_id: int, genres: list[str]):
     return await db.fetch_all(query, genres, book_id)
 
 
-async def get_all_books_records(title: str = None, author: str = None, genre: str = None,
+async def get_all_books_records(db, title: str = None, author: str = None, genre: str = None,
                                 year_from: int = None, year_to: int = None, start_item: int = None,
                                 page_size: int = None, sort_by: str = 'title', sort_order: str = 'asc'):
     query = f"""
@@ -117,7 +116,7 @@ LIMIT $7 OFFSET $8;
     return await db.fetch_all(query, title, author, genre, year_from, year_to, sort_by, page_size, start_item)
 
 
-async def get_book_by_id(book_id: int):
+async def get_book_by_id(book_id: int, db):
     query = """
        SELECT 
     b.id AS book_id,
@@ -149,22 +148,22 @@ GROUP BY
     return await db.fetch_one(query, book_id)
 
 
-async def delete_book_by_id(book_id: int):
+async def delete_book_by_id(book_id: int, db):
     query = """DELETE FROM books WHERE id = $1 RETURNING id;"""
     return await db.fetch_one(query, book_id)
 
 
-async def clear_book_authors(book_id: int):
+async def clear_book_authors(book_id: int, db):
     query = """DELETE FROM book_authors WHERE book_id = $1;"""
     await db.execute(query, book_id)
 
 
-async def clear_book_genres(book_id: int):
+async def clear_book_genres(book_id: int, db):
     query = """DELETE FROM book_genres WHERE book_id = $1;"""
     await db.execute(query, book_id)
 
 
-async def update_book_by_id(book_id: int, book_data: Book, user_id: int):
+async def update_book_by_id(book_id: int, book_data: Book, user_id: int, db):
     query = """UPDATE books
 SET
     title = COALESCE($1, title),
