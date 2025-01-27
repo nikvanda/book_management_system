@@ -2,6 +2,8 @@
 
 A feature-rich FastAPI application for managing books with PostgreSQL backend.
 
+You can access SwaggerUI by /docs
+
 ## 🛠 Tech Stack
 
 - **Framework**: FastAPI
