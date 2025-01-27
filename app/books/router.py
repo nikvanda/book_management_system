@@ -9,15 +9,15 @@ from starlette.responses import JSONResponse
 
 from .schemas.book import Book, BookResponse
 from app.auth.schemas import User
-from app.auth.services import get_current_active_user
 from .services import add_book_instance, update_book_instance, delete_book_instance, get_all_book_instances, \
     get_book_instance
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix='/books')
 
 
 @router.post('/', response_model=BookResponse)  # todo: optimize sql queries
-async def add_book(book: Book, current_user: Annotated[User, Depends(get_current_active_user)]):
+async def add_book(book: Book, current_user: Annotated[User, Depends(get_current_user)]):
     response = await add_book_instance(book, current_user.id)
     return response
 
@@ -60,7 +60,7 @@ async def get_book(book_id: int):
 
 
 @router.delete('/{book_id}')
-async def delete_book(book_id: int, current_user: Annotated[User, Depends(get_current_active_user)]):
+async def delete_book(book_id: int, current_user: Annotated[User, Depends(get_current_user)]):
     response = await delete_book_instance(book_id)
     if response:
         return JSONResponse(status_code=204, content='')
@@ -69,7 +69,7 @@ async def delete_book(book_id: int, current_user: Annotated[User, Depends(get_cu
 
 
 @router.patch('/{book_id}', response_model=BookResponse)
-async def update_book(book_id: int, book: Book, current_user: Annotated[User, Depends(get_current_active_user)]):
+async def update_book(book_id: int, book: Book, current_user: Annotated[User, Depends(get_current_user)]):
     try:
         updated_book = await update_book_instance(book_id, book, current_user.id)
     except ValidationError as e:  # todo: add publication year validation
@@ -81,7 +81,7 @@ async def update_book(book_id: int, book: Book, current_user: Annotated[User, De
 
 
 @router.post('/import')
-async def import_books_from_file(current_user: Annotated[User, Depends(get_current_active_user)],
+async def import_books_from_file(current_user: Annotated[User, Depends(get_current_user)],
                                  file: UploadFile = File(...)):
     if file.content_type == "application/json":
         contents = await file.read()

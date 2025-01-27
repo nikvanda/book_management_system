@@ -2,7 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from .schemas import UserIn, UserRegister, UserAuthorize, User
-from .services import register_user, authenticate_user, authorize_user, get_current_active_user
+from .services import register_user, authenticate_user, authorize_user
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix='/users')
 
@@ -23,5 +24,5 @@ async def login(user: UserIn):
 
 
 @router.get('/me', response_model=User)
-async def review_current_user(current_user: Annotated[User, Depends(get_current_active_user)]):
+async def review_current_user(current_user: Annotated[User, Depends(get_current_user)]):
     return current_user

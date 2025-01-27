@@ -1,16 +1,12 @@
 import asyncio
 from datetime import timedelta, datetime
-from typing import Annotated
 
 import jwt
 import bcrypt
-from fastapi import Depends, HTTPException
-from jwt import InvalidTokenError
-from starlette import status
 
 from app.common import db
-from app.config import settings, oauth2_scheme
-from .schemas import UserIn, User, UserRegister, TokenData
+from app.config import settings
+from .schemas import UserIn, User, UserRegister
 
 
 async def register_user(user: UserRegister):
@@ -66,29 +62,8 @@ async def create_refresh_token(data: dict, expires_delta: timedelta | None = Non
     return encoded_jwt
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},) #todo: remove to controller
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except InvalidTokenError:
-        raise credentials_exception
-    user = get_user(username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
-
-
-async def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
-    # if (await current_user).disabled:
-    #     raise HTTPException(status_code=400, detail="Inactive user")
-    return await current_user
+# async def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
+#     return await current_user
 
 
 async def authorize_user(user: User):
