@@ -25,7 +25,7 @@ git clone <repository-url>
 cd book_management_system
 ```
 
-Set Up Environment Variables: Create a .env file in the project root with the following variables or download from the Google Drive:
+Set Up Environment Variables: Create a .env file in the project root with the following variables or download from the [Google Drive](https://drive.google.com/file/d/1N2lnlc7llw-mJJvg7-nk0DUq_i-ghaWD/view?usp=sharing):
 
 ```
 DB_USER="book_admin"
