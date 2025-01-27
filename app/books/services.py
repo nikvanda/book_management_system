@@ -20,7 +20,7 @@ async def set_book_genres(genre_list: list[Genre], book_id: int):
 async def update_book_instance(book_id: int, book_data: Book, user_id: int):
     book_record = await update_book_by_id(book_id, book_data, user_id)
     response = dict(book_record)
-    response['book_id'] = book_record['id']
+    response['book_id'] = book_record['id'] #todo: fix it after test writing
 
     if book_data.author:
         await clear_book_authors(book_id)
