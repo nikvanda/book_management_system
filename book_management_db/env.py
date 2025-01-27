@@ -10,11 +10,27 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 load_dotenv()
+
+# ENVIRONMENT = os.getenv('ENVIRONMENT', 'prod')  # Default to 'prod' if not set
+
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT')
 DB_NAME = os.getenv('DB_NAME')
+
+# if ENVIRONMENT == 'prod':
+#     DB_USER = os.getenv('DB_USER')
+#     DB_PASSWORD = os.getenv('DB_PASSWORD')
+#     DB_HOST = os.getenv('DB_HOST')
+#     DB_PORT = os.getenv('DB_PORT')
+#     DB_NAME = os.getenv('DB_NAME')
+# else:
+#     DB_USER = os.getenv('DB_USER')
+#     DB_PASSWORD = os.getenv('DB_PASSWORD')
+#     DB_HOST = os.getenv('DB_HOST')
+#     DB_PORT = os.getenv('DB_PORT')
+#     DB_NAME = 'test_book_management'
 
 database_url = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 

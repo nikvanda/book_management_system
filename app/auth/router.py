@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+from starlette.responses import JSONResponse
+
 from .schemas import UserIn, UserRegister, UserAuthorize, User
 from .services import register_user, authenticate_user, authorize_user
 from ..dependencies import CurrentUser, DB
@@ -9,6 +11,7 @@ router = APIRouter(prefix='/users')
 @router.post('/register')
 async def register(user: UserRegister, db: DB):
     await register_user(user, db)
+    return JSONResponse(status_code=200, content={"message": "User registered successfully"})
 
 
 @router.post('/login', response_model=UserAuthorize)

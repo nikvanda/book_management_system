@@ -1,14 +1,11 @@
 import subprocess
+from unittest.mock import AsyncMock
+
 import pytest
+from fastapi import Depends
+from starlette.testclient import TestClient
 
-from app.constants import TEST_DATABASE_URL
-from app.common import db
-
-db.database_url = TEST_DATABASE_URL
-
-
-@pytest.fixture(scope="session", autouse=True)
-def apply_migrations():
-    subprocess.run(["alembic", "upgrade", "head"], check=True)
-    yield
-    subprocess.run(["alembic", "downgrade", "base"], check=True)
+from app.common import Database
+from app.config import settings
+from app.dependencies import get_db
+from app.main import app
