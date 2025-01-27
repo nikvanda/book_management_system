@@ -22,9 +22,26 @@ A feature-rich FastAPI application for managing books with PostgreSQL backend.
 ```bash
 # Clone repository
 git clone <repository-url>
-cd book-management-system
+cd book_management_system
+```
+
+Set Up Environment Variables: Create a .env file in the project root with the following variables or download from the Google Drive:
+
+```
+DB_USER="book_admin"
+DB_PASSWORD="secure_password_123"
+DB_HOST="localhost"
+DB_NAME="book_management_db"
+DB_PORT="5432"
+SECRET_KEY="mySuperSecretKey12345"
+ALGORITHM="HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES="30"
+REFRESH_TOKEN_EXPIRE_DAYS="7"
+ENVIRONMENT="development"
+```
 
 # Build and run
+```bash
 docker-compose up --build
 ```
 
