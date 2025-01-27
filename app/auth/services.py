@@ -1,4 +1,3 @@
-import asyncio
 from datetime import timedelta, datetime
 
 import jwt
@@ -6,13 +5,13 @@ import bcrypt
 
 from app.common import Database
 from app.config import settings
+from .repository import add_user, get_user_by_username, update_user_last_login
 from .schemas import UserIn, User, UserRegister
 
 
 async def register_user(user: UserRegister, db: Database):
-    query = "INSERT INTO users (username, password) VALUES ($1, $2)"
     pw_hash = get_password_hash(user.password)
-    await db.execute(query, user.username, pw_hash)
+    await add_user(user, pw_hash, db)
 
 
 def get_password_hash(password: str) -> str:
@@ -26,8 +25,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 async def get_user(username: str, db: Database) -> User:
-    query = "SELECT * FROM users WHERE username = $1;"
-    user = await db.fetch_one(query, username)
+    user = await get_user_by_username(username, db)
     return User.serialize_record(user)
 
 
@@ -62,15 +60,10 @@ async def create_refresh_token(data: dict, expires_delta: timedelta | None = Non
     return encoded_jwt
 
 
-# async def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
-#     return await current_user
-
-
 async def authorize_user(user: User, db: Database):
     access_token = await create_access_token(data={"sub": user.username},
                                              expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     refresh_token = await create_refresh_token(data={"sub": user.username},
                                                expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
-    query = "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = $1;"
-    asyncio.create_task(db.execute(query, user.username))
+    update_user_last_login(user.username, db)
     return {'access_token': access_token, 'refresh_token': refresh_token}
