@@ -1,28 +1,26 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from .schemas import UserIn, UserRegister, UserAuthorize, User
 from .services import register_user, authenticate_user, authorize_user
-from ..dependencies import get_current_user
+from ..dependencies import CurrentUser, DB
 
 router = APIRouter(prefix='/users')
 
 
 @router.post('/register')
-async def register(user: UserRegister):
-    await register_user(user)
+async def register(user: UserRegister, db: DB):
+    await register_user(user, db)
 
 
 @router.post('/login', response_model=UserAuthorize)
-async def login(user: UserIn):
-    authenticated_user = await authenticate_user(user)
+async def login(user: UserIn, db: DB):
+    authenticated_user = await authenticate_user(user, db)
     if authenticated_user:
-        data = await authorize_user(authenticated_user)
+        data = await authorize_user(authenticated_user, db)
         return data
     #todo: raise an error
 #todo: add logout
 
 
 @router.get('/me', response_model=User)
-async def review_current_user(current_user: Annotated[User, Depends(get_current_user)]):
+async def review_current_user(current_user: CurrentUser):
     return current_user

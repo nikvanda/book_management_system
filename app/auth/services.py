@@ -4,12 +4,12 @@ from datetime import timedelta, datetime
 import jwt
 import bcrypt
 
-from app.common import db
+from app.common import Database
 from app.config import settings
 from .schemas import UserIn, User, UserRegister
 
 
-async def register_user(user: UserRegister):
+async def register_user(user: UserRegister, db: Database):
     query = "INSERT INTO users (username, password) VALUES ($1, $2)"
     pw_hash = get_password_hash(user.password)
     await db.execute(query, user.username, pw_hash)
@@ -25,14 +25,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return correct_password
 
 
-async def get_user(username: str) -> User:
+async def get_user(username: str, db: Database) -> User:
     query = "SELECT * FROM users WHERE username = $1;"
     user = await db.fetch_one(query, username)
     return User.serialize_record(user)
 
 
-async def authenticate_user(user_data: UserIn):
-    user = await get_user(user_data.username)
+async def authenticate_user(user_data: UserIn, db: Database):
+    user = await get_user(user_data.username, db)
     if not user:
         return False
     if not verify_password(user_data.password, user.password):
@@ -66,7 +66,7 @@ async def create_refresh_token(data: dict, expires_delta: timedelta | None = Non
 #     return await current_user
 
 
-async def authorize_user(user: User):
+async def authorize_user(user: User, db: Database):
     access_token = await create_access_token(data={"sub": user.username},
                                              expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     refresh_token = await create_refresh_token(data={"sub": user.username},
