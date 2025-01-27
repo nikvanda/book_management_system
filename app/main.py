@@ -2,16 +2,13 @@ import uvicorn
 from fastapi import FastAPI
 
 from app.common import lifespan
+from app.auth.router import router as auth_router
+from app.books.router import router as books_router
 
 app = FastAPI(lifespan=lifespan)
 
-
-from auth.router import router
-app.include_router(router)
-
-from books.router import router
-app.include_router(router)
-
+app.include_router(auth_router, tags=["auth"])
+app.include_router(books_router, tags=["books"])
 
 if __name__ == '__main__':
-    uvicorn.run(app, host="127.0.0.1", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8080)

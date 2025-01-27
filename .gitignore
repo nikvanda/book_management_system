@@ -3,3 +3,5 @@ test.py
 models.py
 .env
 *__pycache__*
+postgres_data
+test_postgres_data
