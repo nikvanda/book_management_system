@@ -75,10 +75,10 @@ async def delete_book(book_id: int, current_user: CurrentUser, db: DB):
     try:
         response = await delete_book_instance(book_id, db)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting book: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting book.")
 
     if response:
-        return JSONResponse(status_code=204, content='')
+        return JSONResponse(status_code=204, content='Book was deleted.')
     else:
         return JSONResponse(status_code=404, content=f'No book found with ID {book_id}.')
 
